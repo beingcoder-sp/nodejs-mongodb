@@ -39,26 +39,25 @@ router.get('/:productId', (req, res, next) => {
     .select('name price _id') // Only get name, price and _id field
     .exec()
     .then(doc => {
-        res.status(200).json({
-            product: doc,
-            request: {
-                type: 'GET',
-                description: 'Get all products',
-                url: 'http://localhost:3000/product/'
-            }
-        });
+        if(doc){
+            res.status(200).json({
+                product: doc,
+                request: {
+                    type: 'GET',
+                    description: 'Get all products',
+                    url: 'http://localhost:3000/product/'
+                }
+            });
+        } else {
+            res.status(404).json({
+                message: 'No valid entry found for provided Id'
+            });
+        }
     })
     .catch(err => {
         console.log(err);
         res.status(500).json({error: err});
     });
-    
-    /*
-    res.status(200).json({
-        message : 'Get product request with Id',
-        id : id
-    });
-    */
 });
 
 router.post('/', (req, res, next) => {
@@ -76,11 +75,11 @@ router.post('/', (req, res, next) => {
             createdProduct: {
                 _id: result._id,
                 name: result.name,
-                price: result.price,
-                request: {
-                    type: 'GET',
-                    url: 'http://localhost:3000/product/' + result._id
-                }
+                price: result.price
+            },
+            request: {
+                type: 'GET',
+                url: 'http://localhost:3000/product/' + result._id
             }
         });
     })

@@ -3,9 +3,11 @@ const router = express.Router();
 const mongoose = require('mongoose');
 
 const Order = require('../models/order');
+const Product = require('../models/product');
 
 router.get('/', (req, res, next) => {
     Order.find()
+    .select('_id quantity productId')
     .exec()
     .then(doc => {
         const response = {
@@ -34,11 +36,24 @@ router.get('/:orderId', (req, res, next) => {
     const orderId = req.params.orderId;
 
     Order.findById({_id: orderId})
+    .select('_id quantity productId')
     .exec()
     .then(doc => {
-        res.status(200).json({
-            order: doc
-        })
+        if(doc){
+            res.status(200).json({
+                product: doc,
+                request: {
+                    type: 'GET',
+                    description: 'Get all products',
+                    url: 'http://localhost:3000/order/'
+                }
+            });
+        } else {
+            res.status(404).json({
+                message: 'No valid entry found for provided Id'
+            })
+        }
+
     })
     .catch(err => {
         res.status(500).json({error: err});
@@ -46,28 +61,33 @@ router.get('/:orderId', (req, res, next) => {
 });
 
 router.post('/', (req, res, next) => {
-    const order = new Order({
-        _id: new mongoose.Types.ObjectId(),
-        quantity: req.body.quantity,
-        product: req.body.productId
-    });
 
-    order.save()
+    Product.findById(req.body.productId)
+    .then(product => {
+        if(!product){
+            return res.status(404).json({
+                message: 'Product not found'
+            })
+        }
+        const order = new Order({
+            _id: new mongoose.Types.ObjectId(),
+            quantity: req.body.quantity,
+            product: req.body.productId
+        });
+        return order.save();
+    })
     .then(result => {
         res.status(200).json({
             message : 'Created order successfully.',
-            result: result
-            /*
-            createdProduct: {
+            createdOrder: {
                 _id: result._id,
-                name: result.name,
-                price: result.price,
-                request: {
-                    type: 'GET',
-                    url: 'http://localhost:3000/order/' + result._id
-                }
+                productId: result.product,
+                quantity: result.quantity
+            },
+            request: {
+                type: 'GET',
+                url: 'http://localhost:3000/order/' + result._id
             }
-            */
         });
     })
     .catch(err => {
